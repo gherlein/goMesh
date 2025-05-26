@@ -20,13 +20,13 @@ The core of the system is the `Radio` struct, which handles all communication wi
 ```mermaid
 stateDiagram-v2
     [*] --> Uninitialized
-    Uninitialized --> Initialized: Init()
-    Initialized --> Connected: Open Connection
-    Connected --> Configured: Configure Channel/Settings
-    Connected --> MessageHandling: Start Message Operations
-    Configured --> MessageHandling: Begin Communication
-    MessageHandling --> Connected: Close Message Session
-    Connected --> Uninitialized: Close()
+    Uninitialized --> Initialized: radio.Init(port)
+    Initialized --> Connected: streamer.Init()
+    Connected --> Configured: SetRadioConfig() / SetChannelURL() / SetChannels()
+    Connected --> MessageHandling: SendTextMessage() / GetRadioInfo()
+    Configured --> MessageHandling: SendTextMessage() / GetRadioInfo()
+    MessageHandling --> Connected: ReadResponse()
+    Connected --> Uninitialized: radio.Close()
 ```
 
 ### 2. Communication Layer
@@ -41,13 +41,13 @@ sequenceDiagram
     participant GoMesh
     participant Radio
     
-    App->>GoMesh: Init(port)
-    GoMesh->>GoMesh: Determine Conn Type
-    GoMesh->>Radio: Open Connection
-    Radio-->>GoMesh: Connection Status
-    GoMesh-->>App: Ready State
+    App->>GoMesh: radio.Init(port)
+    GoMesh->>GoMesh: streamer.Init(port)
+    GoMesh->>Radio: getNodeNum()
+    Radio-->>GoMesh: FromRadio_MyInfo
+    GoMesh-->>App: return Radio struct
     
-    Note over App,Radio: Connection Established
+    Note over App,Radio: Radio Ready for Communication
 ```
 
 ### 3. Protocol Buffer Integration
@@ -86,17 +86,18 @@ Features:
 ### Message Flow
 ```mermaid
 sequenceDiagram
-    participant Sender
+    participant App
     participant GoMesh
     participant Radio
     participant MeshRadios
     
-    Sender->>GoMesh: SendText()
-    GoMesh->>Radio: Format Message
+    App->>GoMesh: SendTextMessage(message, to, channel)
+    GoMesh->>GoMesh: proto.Marshal(ToRadio)
+    GoMesh->>Radio: sendPacket(marshaled)
     Radio->>MeshRadios: Transmit
-    MeshRadios-->>Radio: Acknowledge
-    Radio-->>GoMesh: Confirm
-    GoMesh-->>Sender: Status
+    MeshRadios-->>Radio: FromRadio_Packet
+    Radio-->>GoMesh: ReadResponse()
+    GoMesh-->>App: error/nil
 ```
 
 ## Security Considerations
