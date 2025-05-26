@@ -7,7 +7,7 @@ GoMesh is a Go package designed to provide a high-level interface for interactin
 ```mermaid
 graph TD
     A[Client Application] -->|Uses| B[GoMesh Library]
-    B -->|Serial/TCP + Protobuf Messages| C[Meshtastic Radio Device]
+    B -->|Serial/TCP + Protobuf Messages| C[Radio]
     E[meshtastic-go CLI] -->|Example Implementation| B
 ```
 
@@ -38,16 +38,16 @@ The library supports two communication methods:
 ```mermaid
 sequenceDiagram
     participant App
+    participant GoMesh
     participant Radio
-    participant Device
     
-    App->>Radio: Init(port)
-    Radio->>Radio: Determine Conn Type
-    Radio->>Device: Open Connection
-    Device-->>Radio: Connection Status
-    Radio-->>App: Ready State
+    App->>GoMesh: Init(port)
+    GoMesh->>GoMesh: Determine Conn Type
+    GoMesh->>Radio: Open Connection
+    Radio-->>GoMesh: Connection Status
+    GoMesh-->>App: Ready State
     
-    Note over App,Device: Connection Established
+    Note over App,Radio: Connection Established
 ```
 
 ### 3. Protocol Buffer Integration
@@ -89,12 +89,12 @@ sequenceDiagram
     participant Sender
     participant GoMesh
     participant Radio
-    participant MeshNetwork
+    participant MeshRadios
     
     Sender->>GoMesh: SendText()
     GoMesh->>Radio: Format Message
-    Radio->>MeshNetwork: Transmit
-    MeshNetwork-->>Radio: Acknowledge
+    Radio->>MeshRadios: Transmit
+    MeshRadios-->>Radio: Acknowledge
     Radio-->>GoMesh: Confirm
     GoMesh-->>Sender: Status
 ```
