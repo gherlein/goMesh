@@ -7,8 +7,7 @@ GoMesh is a Go package designed to provide a high-level interface for interactin
 ```mermaid
 graph TD
     A[Client Application] -->|Uses| B[GoMesh Library]
-    B -->|Serial/TCP| C[Meshtastic Radio Device]
-    B -->|Protobuf| D[Device Communication]
+    B -->|Serial/TCP + Protobuf Messages| C[Meshtastic Radio Device]
     E[meshtastic-go CLI] -->|Example Implementation| B
 ```
 
