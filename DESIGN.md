@@ -113,11 +113,60 @@ sequenceDiagram
 
 ## Error Handling
 
-The library implements comprehensive error handling:
-- Connection failures
-- Protocol errors
-- Configuration validation
-- Message transmission errors
+The library implements comprehensive error handling with the following error codes:
+
+```protobuf
+enum CriticalErrorCode {
+    NONE = 0;                     // No error
+    TX_WATCHDOG = 1;             // Transmit watchdog timeout
+    SLEEP_ENTER_WAIT = 2;        // Failed to enter sleep mode
+    NO_RADIO = 3;                // No radio hardware detected
+    UNSPECIFIED = 4;             // Unspecified error
+    UBLOX_UNIT_FAILED = 5;       // uBlox GPS unit failure
+    NO_AXP192 = 6;               // AXP192 power management chip not found
+    INVALID_RADIO_SETTING = 7;   // Invalid radio configuration
+    TRANSMIT_FAILED = 8;         // Failed to transmit message
+    BROWNOUT = 9;                // System brownout detected
+    SX1262_FAILURE = 10;         // SX1262 radio chip failure
+    RADIO_SPI_BUG = 11;         // Radio SPI communication bug
+}
+```
+
+These error codes are returned via the `error_code` field in `FromRadio` messages to indicate various failure conditions. The error handling flow follows this pattern:
+
+```mermaid
+graph TD
+    A[Operation Request] -->|Try| B{Validation}
+    B -->|Failed| C[Return Error]
+    B -->|Success| D[Execute Operation]
+    D -->|Error| E[Handle Error]
+    D -->|Success| F[Return Result]
+    E -->|Recoverable| D
+    E -->|Fatal| G[Close Connection]
+```
+
+### Error Recovery Steps
+
+1. Connection failures:
+   - Wait 1 second
+   - Attempt reconnection
+   - Reset device if needed
+   
+2. Protocol errors:
+   - Clear buffers
+   - Resynchronize
+   - Reinitialize if needed
+
+3. Hardware errors:
+   - Reset connection
+   - Reinitialize device
+   - Report if persistent
+
+The error handling system ensures robust operation by:
+- Detecting and reporting hardware failures
+- Managing protocol synchronization
+- Handling configuration validation
+- Recovery from transmission errors
 
 ### Error Flow
 ```mermaid
@@ -355,9 +404,9 @@ Example packet:
 [0x94][0xc3][00][1E][protobuf bytes...]
  |     |     |   |    |
  |     |     |   |    +-- Serialized protobuf message
- |     |     +---+------ Length (30 bytes) in big endian
- |     +---------------- Second start byte (0xc3)
- +-------------------- First start byte (0x94)
+ |     |     |   +------ Length (30 bytes) in big endian
+ |     |     +---------------- Second start byte (0xc3)
+ |     +-------------------- First start byte (0x94)
 ```
 
 ### 5. Error Response Format
